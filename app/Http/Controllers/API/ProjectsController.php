@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\API;
 
-use App\Projects;
+use App\Models\Projects;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProjectsResource;
 use Illuminate\Http\Request;
@@ -54,7 +54,7 @@ class ProjectsController extends Controller
      */
     public function show(Projects $project)
     {
-        return response([ 'project' => new CEOResource($project), 'message' => 'Retrieved successfully'], 200);
+        return response([ 'project' => new ProjectsResource($project), 'message' => 'Retrieved successfully'], 200);
 
     }
 
