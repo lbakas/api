@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Models\User;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UsersResource;
+use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -29,21 +30,27 @@ class UsersController extends Controller
      */
     public function store(Request $request)
     {
+      if ( Auth::check() && Auth::user()->is_admin ) {
         $data = $request->all();
 
         $validator = Validator::make($data, [
             'name' => 'required|max:255',
             'email' => 'email|required',
-            'is_admin' => 'required'
+            'password' => 'required'
         ]);
 
         if($validator->fails()){
             return response(['error' => $validator->errors(), 'Validation Error']);
         }
 
+        $data['password'] = bcrypt($data['password']);
+
         $user = User::create($data);
 
         return response([ 'user' => new UsersResource($user), 'message' => 'Created successfully'], 200);
+      }
+
+      return response([ 'message' => 'Not authorized' ]);
     }
 
     /**
@@ -67,10 +74,20 @@ class UsersController extends Controller
      */
     public function update(Request $request, User $user)
     {
+      if ( Auth::check() && Auth::user()->is_admin || Auth::user()->id == $user->id) {
 
-        $user->update($request->all());
+        $data = $request->all();
+
+        if (array_key_exists('password', $data)) {
+          $data['password'] = bcrypt($data['password']);
+        }
+
+        $user->update($data);
 
         return response([ 'user' => new UsersResource($user), 'message' => 'Retrieved successfully'], 200);
+      }
+
+      return response([ 'message' => 'Not authorized' ]);
     }
 
     /**
@@ -82,8 +99,12 @@ class UsersController extends Controller
      */
     public function destroy(User $user)
     {
+      if ( Auth::check() && Auth::user()->is_admin ) {
+
         $user->delete();
 
         return response(['message' => 'Deleted']);
+      }
+      return response([ 'message' => 'Not authorized' ]);
     }
 }
