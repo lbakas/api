@@ -5,6 +5,7 @@ namespace App\Http\Controllers\API;
 use App\Models\Projects;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ProjectsResource;
+use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -30,6 +31,10 @@ class ProjectsController extends Controller
     public function store(Request $request)
     {
         $data = $request->all();
+
+        if(!Auth::user()->is_admin) {
+          $data['user_id'] = Auth::user()->id;
+        }
 
         $validator = Validator::make($data, [
             'name' => 'required|max:255',
@@ -67,10 +72,19 @@ class ProjectsController extends Controller
      */
     public function update(Request $request, Projects $project)
     {
+      if ( Auth::check() && Auth::user()->is_admin || Auth::user()->id == $project->user_id) {
 
-        $project->update($request->all());
+        $data = $request->all();
+
+        if(array_key_exists('user_id', $data) && !Auth::user()->is_admin) {
+          $data['user_id'] = Auth::user()->id;
+        }
+
+        $project->update($data);
 
         return response([ 'project' => new ProjectsResource($project), 'message' => 'Retrieved successfully'], 200);
+      }
+      return response([ 'message' => 'Not authorized' ]);
     }
 
     /**
@@ -82,8 +96,12 @@ class ProjectsController extends Controller
      */
     public function destroy(Projects $project)
     {
+      if ( Auth::check() && Auth::user()->is_admin || Auth::user()->id == $project->user_id) {
+
         $project->delete();
 
         return response(['message' => 'Deleted']);
+      }
+      return response([ 'message' => 'Not authorized' ]);
     }
 }
